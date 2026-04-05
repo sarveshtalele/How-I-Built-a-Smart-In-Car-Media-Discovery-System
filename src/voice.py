@@ -33,7 +33,7 @@ def transcribe_audio_file(audio_path):
     """
     model = _get_whisper()
     print(f"[voice] Transcribing {audio_path} ...")
-    result = model.transcribe(str(audio_path), language="en")
+    result = model.transcribe(str(audio_path), language="en", fp16=False)
     text = result["text"].strip()
     print(f"[voice] Transcription: '{text}'")
     return text
