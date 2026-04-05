@@ -1,0 +1,27 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Data files (too large for git)
+data/qdrant_shard/
+data/spotify_songs.csv
+data/temp_voice.wav
+archive/
+archive.zip
+
+# OS
+.DS_Store
+
+# Model cache
+*.onnx
+.claude/
+.idea/
+.vscode/
+*.log
