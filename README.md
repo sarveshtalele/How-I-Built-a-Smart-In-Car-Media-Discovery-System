@@ -1,5 +1,7 @@
 # CarTune: Smart In-Car Media Discovery System 🚗🎶
 
+![CarTune App Interface](data/display.png)
+
 CarTune is a modern, offline-first music discovery platform designed specifically for in-car infotainment systems. Utilizing highly optimized local AI models, CarTune handles voice requests, natural language text searches, and intelligent mood-based discovery directly on the edge.
 
 By moving embedding and vector search entirely off the cloud, CarTune ensures **zero latency** and **privacy-first** media discovery—essential for the next generation of smart vehicles. 
@@ -9,14 +11,14 @@ We have specifically reduced this repository to an **MVP (Minimum Viable Product
 ## 🚀 Key Features
 
 *   **Voice Search Generation:** Integrated seamlessly with Streamlit's `st.audio_input`, allowing drivers to make requests entirely hands-free through their dashboard mock UI.
-*   **Local Transcription:** Audio is parsed entirely offline using **OpenAI Whisper** base models. No continuous internet connection to cloud LLM providers required.
+*   **Local Transcription:** Audio is parsed entirely offline using **OpenAI Whisper** ('small' model). No continuous internet connection to cloud LLM providers required.
 *   **Vector Search & RAG:** Uses **Qdrant Edge** and **FastEmbed** (`sentence-transformers/all-MiniLM-L6-v2`) to turn song metadata, analytics, and moods into dense vectors. Finding "an energetic pop song" runs entirely in RAM.
 *   **Streamlit UI Mockup:** A beautiful automobile-themed layout designed directly inside Python via `app.py`.
 
 ## 📁 System Architecture
 
 ```text
-ghostwriting/
+cartune/
 ├── app.py                       # Single-file Streamlit MVP (Dashboard UI)
 ├── requirements.txt             # Python Package Dependencies
 ├── pyproject.toml               # Modern UV packaging details
@@ -63,4 +65,4 @@ Open your browser to the local network port indicated by Streamlit.
 ## 🧠 Model Tech Stack
 *   **Embedding Model:** `sentence-transformers/all-MiniLM-L6-v2` via `FastEmbed`.
 *   **Vector Datastore:** `qdrant-edge-py` for pure local query and shard storage.
-*   **Voice Transcription:** `openai-whisper` (Base model) processing direct Streamlit audio buffer ingestion.
+*   **Voice Transcription:** `openai-whisper` (Small model) processing direct Streamlit audio buffer ingestion.
