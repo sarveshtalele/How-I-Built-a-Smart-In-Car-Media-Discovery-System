@@ -12,16 +12,19 @@ wheels/
 # Data files (too large for git)
 data/qdrant_shard/
 data/spotify_songs.csv
+data/songs.csv
 data/temp_voice.wav
-archive/
-archive.zip
+fma_small/
+fma_metadata/
+*.zip
 
 # OS
 .DS_Store
 
-# Model cache
-*.onnx
+# IDE / tool caches
 .claude/
 .idea/
 .vscode/
 *.log
+*.onnx
+uv.lock

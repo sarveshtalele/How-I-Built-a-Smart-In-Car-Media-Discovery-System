@@ -1,79 +1,119 @@
 """
-player.py — Simulates music playback in the UI.
+player.py — Real audio playback state for the Streamlit UI.
 
-Since we don't have actual audio files for 30k Spotify tracks,
-this module duplicates the playback experience.  It shows a "now playing"
-card with track info and a progress bar that ticks forward.
+Unlike the previous version, which simulated playback with a fake elapsed
+counter, this player loads the actual MP3 bytes from disk so the Streamlit
+front-end can hand them to st.audio() for real browser playback.
 """
 
-import time
+from __future__ import annotations
+
+from pathlib import Path
+
+from config import PROJECT_ROOT
 
 
 class MusicPlayer:
     """
-    Simple stateful player that tracks which song is currently playing.
-    The Streamlit app reads from this to render the now-playing card.
+    Holds the currently selected song plus its raw MP3 bytes.
+
+    The bytes are loaded once on .play() and stored in session state by the
+    front-end so Streamlit reruns don't reset the audio element in the browser.
     """
 
-    def __init__(self):
-        self.current_song = None
-        self.is_playing = False
-        self.elapsed_ms = 0
+    def __init__(self) -> None:
+        self.current_song:   dict | None  = None
+        self.is_playing:     bool         = False
+        self.audio_path:     str | None   = None
+        self.audio_bytes:    bytes | None = None
+        self.error_message:  str | None   = None
 
-    def play(self, song_info):
-        """
-        Start 'playing' a song.
+    # ── core actions ───────────────────────────────────────────
 
-        Parameters
-        ----------
-        song_info : dict
-            Must have at least 'track_name', 'track_artist',
-            'track_album_name', 'duration_ms'.
+    def play(self, song_info: dict) -> bool:
         """
-        self.current_song = song_info
+        Load the MP3 for the given song and mark it as playing.
+
+        Returns True on success, False if the audio file is missing or
+        cannot be read.
+        """
+        self.current_song  = song_info
+        self.error_message = None
+
+        rel_path = song_info.get("audio_path", "")
+        if not rel_path:
+            self.error_message = "No audio_path stored for this song."
+            self.audio_bytes = None
+            self.audio_path  = None
+            self.is_playing  = False
+            return False
+
+        # support both relative ("fma_small/000/000002.mp3") and absolute paths
+        candidate = Path(rel_path)
+        if not candidate.is_absolute():
+            candidate = PROJECT_ROOT / candidate
+
+        if not candidate.exists():
+            self.error_message = f"Audio file not found: {candidate}"
+            self.audio_bytes = None
+            self.audio_path  = None
+            self.is_playing  = False
+            return False
+
+        try:
+            with candidate.open("rb") as f:
+                self.audio_bytes = f.read()
+        except Exception as e:
+            self.error_message = f"Failed to read audio file: {e}"
+            self.audio_bytes = None
+            self.audio_path  = None
+            self.is_playing  = False
+            return False
+
+        self.audio_path = str(candidate)
         self.is_playing = True
-        self.elapsed_ms = 0
-        print(f"[player] Now playing: {song_info['track_name']} by {song_info['track_artist']}")
+        print(f"[player] Now playing: {song_info.get('track_name')} "
+              f"by {song_info.get('track_artist')} ({len(self.audio_bytes)} bytes)")
+        return True
 
-    def pause(self):
+    def pause(self) -> None:
         self.is_playing = False
 
-    def resume(self):
-        if self.current_song:
+    def resume(self) -> None:
+        if self.current_song is not None and self.audio_bytes is not None:
             self.is_playing = True
 
-    def stop(self):
-        self.current_song = None
-        self.is_playing = False
-        self.elapsed_ms = 0
+    def stop(self) -> None:
+        self.current_song  = None
+        self.audio_path    = None
+        self.audio_bytes   = None
+        self.is_playing    = False
+        self.error_message = None
 
-    def get_progress(self):
-        """Return progress as a float between 0.0 and 1.0."""
-        if not self.current_song:
-            return 0.0
-        total = self.current_song.get("duration_ms", 1)
-        if total <= 0:
-            return 0.0
-        return min(self.elapsed_ms / total, 1.0)
+    # ── helpers ────────────────────────────────────────────────
 
-    def format_duration(self, ms):
-        """Turn milliseconds into a mm:ss string."""
+    def get_audio_bytes(self) -> bytes | None:
+        return self.audio_bytes
+
+    def has_audio(self) -> bool:
+        return self.audio_bytes is not None
+
+    def format_duration(self, ms: int) -> str:
+        """Turn milliseconds into a 'mm:ss' string."""
         total_seconds = int(ms / 1000)
         minutes = total_seconds // 60
         seconds = total_seconds % 60
         return f"{minutes}:{seconds:02d}"
 
-    def now_playing_text(self):
-        """Return a human-readable 'now playing' string."""
+    def now_playing_text(self) -> str:
+        """Plain-text status string for logging or fallback display."""
         if not self.current_song:
             return "Nothing playing"
 
         song = self.current_song
         duration_str = self.format_duration(song.get("duration_ms", 0))
-        elapsed_str = self.format_duration(self.elapsed_ms)
-
         return (
-            f"🎵 {song['track_name']}\n"
-            f"   {song['track_artist']} — {song.get('track_album_name', 'Unknown Album')}\n"
-            f"   [{elapsed_str} / {duration_str}]"
+            f"{song.get('track_name', 'Unknown')} - "
+            f"{song.get('track_artist', 'Unknown')} "
+            f"[{duration_str}]"
         )
